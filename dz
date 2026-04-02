@@ -1,0 +1,82 @@
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+Base = declarative_base()
+
+
+class Movie(Base):
+    __tablename__ = 'movies'
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    genre = Column(String)
+    year = Column(Integer)
+    duration = Column(Integer)
+    rating = Column(Float)
+    is_available = Column(Boolean, default=True)
+
+    def __repr__(self):
+        return f"<Movie {self.title}, {self.genre}, {self.year}, {self.rating}>"
+
+
+def create_movie(session, title, genre, year, duration, rating):
+    movie = Movie(title=title, genre=genre, year=year, duration=duration, rating=rating)
+    session.add(movie)
+    session.commit()
+    return movie
+
+
+def get_all_movies(session):
+    return session.query(Movie).all()
+
+
+def get_movies_by_genre(session, genre_name):
+    return session.query(Movie).filter(Movie.genre == genre_name).all()
+
+
+def get_high_rated_movies(session, min_rating):
+    return session.query(Movie).filter(Movie.rating >= min_rating).all()
+
+
+def get_movies_after_year(session, year):
+    return session.query(Movie).filter(Movie.year > year).all()
+
+
+def get_movie_by_title(session, title):
+    return session.query(Movie).filter(Movie.title == title).first()
+
+
+if __name__ == "__main__":
+    engine = create_engine('sqlite:///movies.db')
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    create_movie(session, "Побег из Шоушенка", "Драма", 1994, 142, 9.3)
+    create_movie(session, "Крёстный отец", "Драма", 1972, 175, 9.2)
+    create_movie(session, "Тёмный рыцарь", "Боевик", 2008, 152, 9.0)
+    create_movie(session, "Криминальное чтиво", "Криминал", 1994, 154, 8.9)
+    create_movie(session, "Властелин колец", "Фэнтези", 2003, 201, 8.9)
+
+    print("Все фильмы:")
+    for m in get_all_movies(session):
+        print(m)
+
+    print("\nДрама:")
+    for m in get_movies_by_genre(session, "Драма"):
+        print(m)
+
+    print("\nРейтинг >= 9.0:")
+    for m in get_high_rated_movies(session, 9.0):
+        print(m)
+
+    print("\nПосле 2000 года:")
+    for m in get_movies_after_year(session, 2000):
+        print(m)
+
+    print("\nПоиск 'Тёмный рыцарь':")
+    print(get_movie_by_title(session, "Тёмный рыцарь"))
+
+    session.close()
